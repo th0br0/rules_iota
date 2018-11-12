@@ -1580,6 +1580,7 @@ boost_library(
     ],
     exclude_src = [
         "libs/log/src/dump_avx2.cpp",
+        "libs/log/src/dump_ssse3.cpp",
     ],
     deps = [
         ":asio",

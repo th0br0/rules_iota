@@ -7,7 +7,7 @@
 
 # Generate config.h
 genrule(
-    name = "configure_lzma",
+    name = "config_h",
     tools = [
         "configure",
         "src/liblzma/common/common.h",
@@ -18,7 +18,14 @@ genrule(
     outs = [
         "config.h",
     ],
-    cmd = "cd external/org_lzma_lzma && ./configure && cp config.h ../../$(location config.h)",
+    cmd = "cd external/org_lzma_lzma && ./configure && cat config.h > ../../$@",
+)
+
+genrule(
+    name = "sysdefs_h",
+    srcs = ["src/common/sysdefs.h"],
+    outs = ["sysdefs.h"],
+    cmd = "sed -e 's/<config.h>/\"config.h\"/g' $(location src/common/sysdefs.h) > $@",
 )
 
 cc_library(
@@ -97,25 +104,23 @@ cc_library(
         "src/liblzma/simple/arm.c",
         "src/liblzma/simple/armthumb.c",
         "src/liblzma/simple/sparc.c",
-    ],
-    defines = [
-        "HAVE_CONFIG_H",
-    ],
-    hdrs = glob(["src/**/*.h"]) + ["config.h"],
+        ":config_h",
+        ":sysdefs_h",
+    ] + glob(["src/**/*.h"], exclude = ["src/liblzma/api/**/*.h", "src/common/sysdefs.h"]),
+    hdrs = glob(["src/liblzma/api/**/*.h"]),
+    strip_include_prefix = "src/liblzma/api",
     visibility = ["//visibility:public"],
-    includes = [
-        ".",
-        "src",
-        "src/common",
-        "src/liblzma",
-        "src/liblzma/api",
-        "src/liblzma/common",
-        "src/liblzma/check",
-        "src/liblzma/lz",
-        "src/liblzma/rangecoder",
-        "src/liblzma/lzma",
-        "src/liblzma/delta",
-        "src/liblzma/simple",
+    copts = [
+        "-iquote external/org_lzma_lzma/src/common",
+        "-iquote external/org_lzma_lzma/src/liblzma",
+        "-iquote external/org_lzma_lzma/src/liblzma/common",
+        "-iquote external/org_lzma_lzma/src/liblzma/check",
+        "-iquote external/org_lzma_lzma/src/liblzma/lz",
+        "-iquote external/org_lzma_lzma/src/liblzma/rangecoder",
+        "-iquote external/org_lzma_lzma/src/liblzma/lzma",
+        "-iquote external/org_lzma_lzma/src/liblzma/delta",
+        "-iquote external/org_lzma_lzma/src/liblzma/simple",
+        "-DHAVE_CONFIG_H",
     ],
     linkopts = ["-lpthread"],
 )

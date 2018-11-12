@@ -3,7 +3,6 @@ licenses(["notice"])
 cc_library(
     name = "fmt",
     hdrs = glob(["fmt/*.h"]),
-    includes = ["."],
     srcs = glob(["fmt/*.cc", "fmt/*.h"]),
     visibility = ["//visibility:public"],
 )
