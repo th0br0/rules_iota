@@ -1,0 +1,248 @@
+licenses(["notice"])
+
+genrule(
+    name = "x86_64_Ginit_c",
+    srcs = ["src/x86_64/Ginit.c"],
+    outs = ["Ginit.c"],
+    cmd = "sed -e 's/<config.h>/\"config.h\"/g' $(location src/x86_64/Ginit.c) > $@",
+)
+
+genrule(
+    name = "libunwind_common_h",
+    srcs = ["include/libunwind-common.h.in"],
+    outs = ["include/libunwind-common.h"],
+    cmd = "sed -e 's/@PKG_MAJOR@/1/' -e 's/@PKG_MINOR@/2.1/' $(location include/libunwind-common.h.in) > $(location include/libunwind-common.h)",
+)
+
+genrule(
+    name = "tdep_libunwind_i",
+    outs = ["tdep/libunwind_i.h"],
+    cmd = """cat > $@ <<"EOF"
+#ifndef UNW_REMOTE_ONLY
+#if defined __aarch64__
+# include "tdep-aarch64/libunwind_i.h"
+#elif defined __arm__
+# include "tdep-arm/libunwind_i.h"
+#elif defined __hppa__
+# include "tdep-hppa/libunwind_i.h"
+#elif defined __ia64__
+# include "tdep-ia64/libunwind_i.h"
+#elif defined __mips__
+# include "tdep-mips/libunwind_i.h"
+#elif defined __powerpc__ && !defined __powerpc64__
+# include "tdep-ppc32/libunwind_i.h"
+#elif defined __powerpc64__
+# include "tdep-ppc64/libunwind_i.h"
+#elif defined __sh__
+# include "tdep-sh/libunwind_i.h"
+#elif defined __i386__
+# include "tdep-x86/libunwind_i.h"
+#elif defined __x86_64__
+# include "tdep-x86_64/libunwind_i.h"
+#elif defined __tilegx__
+# include "tdep-tilegx/libunwind_i.h"
+#else
+# error "Unsupported arch"
+#endif
+#else /* UNW_REMOTE_ONLY */
+# include "tdep-x86_64/libunwind_i.h"
+#endif
+EOF""",
+)
+
+genrule(
+    name = "config_linux",
+    outs = ["config.h"],
+    cmd = """cat > $@ <<"EOF"
+#define CONFIG_BLOCK_SIGNALS /**/
+#define CONSERVATIVE_CHECKS 1
+#define HAVE_BYTESWAP_H 1
+#define HAVE_DECL_PTRACE_CONT 1
+#define HAVE_DECL_PTRACE_POKEDATA 1
+#define HAVE_DECL_PTRACE_POKEUSER 1
+#define HAVE_DECL_PTRACE_SINGLESTEP 1
+#define HAVE_DECL_PTRACE_SYSCALL 1
+#define HAVE_DECL_PTRACE_TRACEME 1
+#define HAVE_DECL_PT_CONTINUE 1
+#define HAVE_DECL_PT_GETFPREGS 1
+#define HAVE_DECL_PT_GETREGS 1
+#define HAVE_DECL_PT_IO 0
+#define HAVE_DECL_PT_STEP 1
+#define HAVE_DECL_PT_SYSCALL 1
+#define HAVE_DECL_PT_TRACE_ME 1
+#define HAVE_DLFCN_H 1
+#define HAVE_DL_ITERATE_PHDR 1
+#define HAVE_ELF_H 1
+#define HAVE_ENDIAN_H 1
+#define HAVE_EXECINFO_H 1
+#define HAVE_INTTYPES_H 1
+#define HAVE_LINK_H 1
+#define HAVE_LZMA 1
+#define HAVE_MEMORY_H 1
+#define HAVE_MINCORE 1
+#define HAVE_SIGNAL_H 1
+#define HAVE_STDINT_H 1
+#define HAVE_STDLIB_H 1
+#define HAVE_STRINGS_H 1
+#define HAVE_STRING_H 1
+#define HAVE_STRUCT_DL_PHDR_INFO_DLPI_SUBS 1
+#define HAVE_STRUCT_ELF_PRSTATUS 1
+#define HAVE_SYNC_ATOMICS 1
+#define HAVE_SYS_PROCFS_H 1
+#define HAVE_SYS_PTRACE_H 1
+#define HAVE_SYS_STAT_H 1
+#define HAVE_SYS_TYPES_H 1
+#define HAVE_UNISTD_H 1
+#define HAVE__BUILTIN_UNREACHABLE 1
+#define HAVE__BUILTIN___CLEAR_CACHE 1
+#define HAVE___THREAD 1
+#define LT_OBJDIR ".libs/"
+#define PACKAGE "libunwind"
+#define PACKAGE_BUGREPORT "libunwind-devel@nongnu.org"
+#define PACKAGE_NAME "libunwind"
+#define PACKAGE_STRING "libunwind 1.2.1"
+#define PACKAGE_TARNAME "libunwind"
+#define PACKAGE_URL ""
+#define PACKAGE_VERSION "1.2.1"
+#define SIZEOF_OFF_T 8
+#define STDC_HEADERS 1
+#define VERSION "1.2.1"
+EOF""",
+)
+
+# These are c source files that need to compiled directly and included
+# from L_xxx files, due to bazel header check, we need to put them
+# into both hdrs and srcs parts.
+PRIVATE_INCLUDE_SRC = [
+    "src/dwarf/Gexpr.c",
+    "src/dwarf/Gfde.c",
+    "src/dwarf/Gfind_proc_info-lsb.c",
+    "src/dwarf/Gfind_unwind_table.c",
+    "src/dwarf/Gparser.c",
+    "src/dwarf/Gpe.c",
+    "src/dwarf/Gstep.c",
+    "src/mi/Gdestroy_addr_space.c",
+    "src/mi/Gdyn-extract.c",
+    "src/mi/Gdyn-remote.c",
+    "src/mi/Gfind_dynamic_proc_info.c",
+    "src/mi/Gget_fpreg.c",
+    "src/mi/Gget_proc_info_by_ip.c",
+    "src/mi/Gget_proc_name.c",
+    "src/mi/Gget_reg.c",
+    "src/mi/Gget_accessors.c",
+    "src/mi/Gput_dynamic_unwind_info.c",
+    "src/mi/Gset_caching_policy.c",
+    "src/mi/Gset_fpreg.c",
+    "src/mi/Gset_reg.c",
+    "src/x86_64/Gcreate_addr_space.c",
+    "src/x86_64/Gget_proc_info.c",
+    "src/x86_64/Gget_save_loc.c",
+    "src/x86_64/Gglobal.c",
+    ":x86_64_Ginit_c",
+    "src/x86_64/Ginit_local.c",
+    "src/x86_64/Ginit_remote.c",
+    "src/x86_64/Gos-linux.c",
+    "src/x86_64/Gregs.c",
+    "src/x86_64/Gresume.c",
+    "src/x86_64/Gstash_frame.c",
+    "src/x86_64/Gstep.c",
+    "src/x86_64/Gtrace.c",
+]
+
+cc_library(
+    name = "libunwind",
+    srcs = [
+        ":config_linux",
+        ":tdep_libunwind_i",
+    ] + [
+        # Private headers
+        "include/mempool.h",
+        "include/compiler.h",
+        "include/dwarf-eh.h",
+        "include/dwarf.h",
+        "include/dwarf_i.h",
+        "include/libunwind_i.h",
+        "include/remote.h",
+        "include/tdep/dwarf-config.h",
+        "include/tdep/jmpbuf.h",
+        "include/tdep-x86_64/dwarf-config.h",
+        "include/tdep-x86_64/libunwind_i.h",
+        "src/elfxx.h",
+        "src/x86_64/offsets.h",
+        # Code
+        "src/dwarf/global.c",
+        "src/dwarf/Lexpr.c",
+        "src/dwarf/Lfde.c",
+        "src/dwarf/Lfind_proc_info-lsb.c",
+        "src/dwarf/Lfind_unwind_table.c",
+        "src/dwarf/Lparser.c",
+        "src/dwarf/Lpe.c",
+        "src/dwarf/Lstep.c",
+        "src/elf64.c",
+        "src/mi/backtrace.c",
+        "src/mi/dyn-cancel.c",
+        "src/mi/dyn-info-list.c",
+        "src/mi/dyn-register.c",
+        "src/mi/flush_cache.c",
+        "src/mi/init.c",
+        "src/mi/Ldestroy_addr_space.c",
+        "src/mi/Ldyn-extract.c",
+        "src/mi/Lfind_dynamic_proc_info.c",
+        "src/mi/Lget_accessors.c",
+        "src/mi/Lget_fpreg.c",
+        "src/mi/Lget_proc_info_by_ip.c",
+        "src/mi/Lget_proc_name.c",
+        "src/mi/Lget_reg.c",
+        "src/mi/Lput_dynamic_unwind_info.c",
+        "src/mi/Lset_caching_policy.c",
+        "src/mi/Lset_fpreg.c",
+        "src/mi/Lset_reg.c",
+        "src/mi/mempool.c",
+        "src/mi/strerror.c",
+        "src/os-linux.c",
+        "src/x86_64/getcontext.S",
+        "src/x86_64/is_fpreg.c",
+        "src/x86_64/Lcreate_addr_space.c",
+        "src/x86_64/Lget_proc_info.c",
+        "src/x86_64/Lget_save_loc.c",
+        "src/x86_64/Lglobal.c",
+        "src/x86_64/Linit.c",
+        "src/x86_64/Linit_local.c",
+        "src/x86_64/Linit_remote.c",
+        "src/x86_64/Los-linux.c",
+        "src/x86_64/Lregs.c",
+        "src/x86_64/Lresume.c",
+        "src/x86_64/Lstash_frame.c",
+        "src/x86_64/Lstep.c",
+        "src/x86_64/Ltrace.c",
+        "src/x86_64/regname.c",
+        "src/x86_64/setcontext.S",
+        "src/elf64.h",
+        "src/os-linux.h",
+        "src/x86_64/init.h",
+        "src/x86_64/ucontext_i.h",
+        "src/x86_64/unwind_i.h",
+    ],
+    hdrs = [
+        ":libunwind_common_h",
+        "include/libunwind-dynamic.h",
+        "include/libunwind-x86_64.h",
+        "include/libunwind-ptrace.h",
+        "include/libunwind-coredump.h",
+        "include/libunwind.h",
+    ],
+    strip_include_prefix = "include",
+    copts = [
+        "-DHAVE_CONFIG_H",
+        "-D_GNU_SOURCE",
+        "-Iexternal/libunwind/src",
+        "-Iexternal/libunwind/include",
+        "-Iexternal/libunwind/include/tdep",
+        "-Iexternal/libunwind/src/x86_64",
+    ],
+    textual_hdrs = [
+        "src/elfxx.c",
+    ] + PRIVATE_INCLUDE_SRC,
+    visibility = ["//visibility:public"],
+    deps = ["@org_lzma_lzma//:lzma"],
+)
