@@ -28,6 +28,39 @@ cc_library(
 )
 
 cc_library(
+    name = "snp",
+    hdrs = ["SnP/SnP-documentation.h", "SnP/SnP-Relaned.h"],
+    strip_include_prefix = "SnP",
+)
+
+cc_library(
+    name = "snp_1600_opt_shared",
+    hdrs = [
+        "SnP/KeccakP-1600/Optimized/KeccakP-1600-unrolling.macros",
+        "SnP/KeccakP-1600/Optimized/KeccakP-1600-64.macros",
+    ],
+    strip_include_prefix = "SnP/KeccakP-1600/Optimized",
+)
+
+cc_library(
+    name = "snp_1600_opt64_lcufull",
+    hdrs = [
+        "SnP/KeccakP-1600/Optimized64/LCufull/KeccakP-1600-opt64-config.h",
+    ],
+    strip_include_prefix = "SnP/KeccakP-1600/Optimized64/LCufull",
+)
+
+cc_library(
+    name = "snp_1600_opt64",
+    srcs = ["SnP/KeccakP-1600/Optimized64/KeccakP-1600-opt64.c"],
+    hdrs = [
+        "SnP/KeccakP-1600/Optimized64/KeccakP-1600-SnP.h",
+    ],
+    strip_include_prefix = "SnP/KeccakP-1600/Optimized64",
+    deps = [":common", ":snp_1600_opt64_lcufull", ":snp_1600_opt_shared", ":snp"],
+)
+
+cc_library(
     name = "common",
     hdrs = [
         "Common/align.h",
@@ -60,7 +93,7 @@ cc_library(
     strip_include_prefix = "Constructions",
     deps = [
         ":keccak_sponge_common",
-        ":snp_1600_reference",
+        ":snp_1600_opt64",
     ],
 )
 
